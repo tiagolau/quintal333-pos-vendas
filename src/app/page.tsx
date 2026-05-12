@@ -6,6 +6,7 @@ import { RatingStep } from "./steps/rating";
 import { RegisterStep } from "./steps/register";
 import { RouletteStep } from "./steps/roulette";
 import { ResultStep } from "./steps/result";
+import Image from "next/image";
 import { ChapterIndicator } from "@/components/chapter-indicator";
 
 const initialState: FlowState = {
@@ -61,20 +62,20 @@ export default function Home() {
       <div className="w-full max-w-[28rem] mx-auto flex flex-col flex-1">
         <header className="text-center mb-12 sm:mb-16">
           <p
-            className="font-serif italic text-q-cream-soft text-[0.7rem] smallcaps mb-2"
+            className="font-serif italic text-q-cream-soft text-[0.7rem] smallcaps mb-3"
             style={{ letterSpacing: "0.18em" }}
           >
             Pizzaria
           </p>
-          <h1
-            className="font-serif text-q-cream text-[1.9rem] sm:text-[2.1rem] leading-none"
-            style={{
-              fontVariationSettings: '"opsz" 144, "SOFT" 0, "wght" 400',
-              letterSpacing: "0.04em",
-            }}
-          >
-            Quintal&nbsp;333
-          </h1>
+          <Image
+            src="/logo.jpeg"
+            alt="Quintal 333"
+            width={225}
+            height={225}
+            priority
+            className="mx-auto w-32 sm:w-36 h-auto"
+            style={{ filter: "invert(1)", mixBlendMode: "screen" }}
+          />
           <div
             className="mx-auto mt-3 h-px w-10 bg-q-gold-deep origin-center animate-reveal-line"
             aria-hidden="true"
