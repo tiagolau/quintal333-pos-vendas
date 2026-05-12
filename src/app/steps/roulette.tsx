@@ -49,31 +49,53 @@ export function RouletteStep({
 
       onSpinComplete(prize, data.coupon_code, data.expires_at);
     } catch {
-      onSpinComplete(prize, "QUINTAL5", new Date(Date.now() + 30 * 86400000).toISOString());
+      onSpinComplete(
+        prize,
+        "QUINTAL5",
+        new Date(Date.now() + 30 * 86400000).toISOString(),
+      );
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="w-8 h-8 border-2 border-q-gold border-t-transparent rounded-full animate-spin" />
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+        <div
+          className="h-px w-12 bg-q-gold-deep origin-center animate-reveal-line"
+          aria-hidden="true"
+        />
+        <p
+          className="font-serif italic text-q-cream-soft text-sm"
+          style={{ fontVariationSettings: '"opsz" 14, "SOFT" 60' }}
+        >
+          preparando
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 text-center">
-      <h2 className="text-xl font-semibold text-q-cream">
-        Gire a roleta!
-      </h2>
-      <p className="text-q-gray text-sm">
-        Toque no botão e descubra seu prêmio
-      </p>
+    <section className="space-y-10">
+      <div className="space-y-1 text-center">
+        <h2
+          className="font-serif text-q-cream-bright text-[1.9rem] leading-[1.05]"
+          style={{
+            fontVariationSettings: '"opsz" 120, "SOFT" 30, "wght" 400',
+            letterSpacing: "-0.005em",
+          }}
+        >
+          Sua vez.
+        </h2>
+        <p className="text-q-cream-soft text-sm font-serif italic">
+          o que estiver para você está nesse disco.
+        </p>
+      </div>
+
       <RouletteWheel
         prizes={prizes}
         onSpinComplete={handleSpinComplete}
         disabled={submitting}
       />
-    </div>
+    </section>
   );
 }

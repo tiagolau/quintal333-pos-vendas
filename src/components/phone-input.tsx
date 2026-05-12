@@ -3,9 +3,10 @@
 interface PhoneInputProps {
   value: string;
   onChange: (value: string) => void;
+  id?: string;
 }
 
-export function PhoneInput({ value, onChange }: PhoneInputProps) {
+export function PhoneInput({ value, onChange, id = "phone" }: PhoneInputProps) {
   const formatPhone = (raw: string) => {
     const digits = raw.replace(/\D/g, "").slice(0, 11);
     if (digits.length <= 2) return digits;
@@ -21,12 +22,14 @@ export function PhoneInput({ value, onChange }: PhoneInputProps) {
 
   return (
     <input
+      id={id}
       type="tel"
       inputMode="numeric"
+      autoComplete="tel-national"
       value={formatPhone(value)}
       onChange={handleChange}
       placeholder="(33) 99191-9770"
-      className="w-full px-4 py-3 rounded-lg bg-q-charcoal border border-q-gray/30 text-q-cream placeholder-q-gray/50 focus:outline-none focus:border-q-gold transition-colors"
+      className="w-full bg-transparent border-b border-q-stone/40 focus:border-q-gold transition-colors duration-300 text-q-cream placeholder:text-q-stone/55 placeholder:italic placeholder:font-serif placeholder:font-light py-2 px-0 focus:outline-none text-[1.05rem] nums-tabular"
     />
   );
 }

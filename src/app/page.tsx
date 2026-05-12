@@ -6,6 +6,7 @@ import { RatingStep } from "./steps/rating";
 import { RegisterStep } from "./steps/register";
 import { RouletteStep } from "./steps/roulette";
 import { ResultStep } from "./steps/result";
+import { ChapterIndicator } from "@/components/chapter-indicator";
 
 const initialState: FlowState = {
   step: "rating",
@@ -40,7 +41,7 @@ export default function Home() {
   const handleSpinComplete = (
     prize: Prize,
     couponCode: string,
-    expiresAt: string
+    expiresAt: string,
   ) => {
     setState((s) => ({
       ...s,
@@ -56,18 +57,34 @@ export default function Home() {
   };
 
   return (
-    <main className="flex flex-col flex-1 items-center justify-center min-h-screen p-4">
-      <div className="w-full max-w-md mx-auto">
-        {/* Logo */}
-        <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold text-q-gold tracking-tight">
-            QUINTAL 333
+    <main className="flex flex-col flex-1 min-h-screen px-5 py-10 sm:px-8 sm:py-14">
+      <div className="w-full max-w-[28rem] mx-auto flex flex-col flex-1">
+        <header className="text-center mb-12 sm:mb-16">
+          <p
+            className="font-serif italic text-q-cream-soft text-[0.7rem] smallcaps mb-2"
+            style={{ letterSpacing: "0.18em" }}
+          >
+            Pizzaria
+          </p>
+          <h1
+            className="font-serif text-q-cream text-[1.9rem] sm:text-[2.1rem] leading-none"
+            style={{
+              fontVariationSettings: '"opsz" 144, "SOFT" 0, "wght" 400',
+              letterSpacing: "0.04em",
+            }}
+          >
+            Quintal&nbsp;333
           </h1>
-          <div className="w-16 h-0.5 bg-q-gold mx-auto mt-2" />
-        </div>
+          <div
+            className="mx-auto mt-3 h-px w-10 bg-q-gold-deep origin-center animate-reveal-line"
+            aria-hidden="true"
+          />
+        </header>
 
-        {/* Steps */}
-        <div className="animate-fade-in-up">
+        <div
+          key={state.step}
+          className="flex-1 animate-fade-up"
+        >
           {state.step === "rating" && (
             <RatingStep
               ratings={state.ratings}
@@ -95,19 +112,9 @@ export default function Home() {
           )}
         </div>
 
-        {/* Progress dots */}
-        <div className="flex justify-center gap-2 mt-8">
-          {(["rating", "register", "roulette", "result"] as const).map(
-            (step) => (
-              <div
-                key={step}
-                className={`w-2 h-2 rounded-full transition-colors ${
-                  state.step === step ? "bg-q-gold" : "bg-q-gray/30"
-                }`}
-              />
-            )
-          )}
-        </div>
+        <footer className="mt-12 sm:mt-16">
+          <ChapterIndicator current={state.step} />
+        </footer>
       </div>
     </main>
   );

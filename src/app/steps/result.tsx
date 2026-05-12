@@ -1,7 +1,6 @@
 "use client";
 
-import { Confetti } from "@/components/confetti";
-import { Gift, RotateCcw, Share2 } from "lucide-react";
+import { useState } from "react";
 import type { FlowState } from "@/lib/types";
 
 interface ResultStepProps {
@@ -10,91 +9,148 @@ interface ResultStepProps {
 }
 
 export function ResultStep({ result, onRestart }: ResultStepProps) {
+  const [shareState, setShareState] = useState<"idle" | "copied">("idle");
   const isWin = result.prize?.name !== "Quase!";
-  const expiresDate = new Date(result.expires_at).toLocaleDateString("pt-BR");
+  const displayPrizeName = isWin
+    ? result.prize?.name
+    : "Cinco por cento pela noite";
+  const displayPrizeDescription = isWin
+    ? result.prize?.description
+    : "Use o código abaixo na próxima visita.";
+  const expiresDate = new Date(result.expires_at).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "long",
+  });
 
   const handleShare = async () => {
     const text = isWin
-      ? `Ganhei ${result.prize?.name} no Quintal 333! A melhor pizza artesanal de MG. @quintal333`
-      : `Acabei de avaliar minha experiência no Quintal 333! A melhor pizza artesanal de MG. @quintal333`;
+      ? `Levei ${result.prize?.name} do Quintal 333. Vão lá: @quintal333`
+      : `Avaliei minha noite no Quintal 333. Pizza de verdade. @quintal333`;
 
-    if (navigator.share) {
-      try {
+    try {
+      if (navigator.share) {
         await navigator.share({ text });
-      } catch {
-        // user cancelled
+      } else {
+        await navigator.clipboard.writeText(text);
+        setShareState("copied");
+        setTimeout(() => setShareState("idle"), 2200);
       }
-    } else {
-      await navigator.clipboard.writeText(text);
+    } catch {
+      // user cancelled or share failed
     }
   };
 
   return (
-    <div className="space-y-6 text-center">
-      {isWin && <Confetti />}
+    <section className="space-y-9">
+      <div className="space-y-3">
+        <p
+          className="font-serif-small italic text-q-cream-soft text-xs smallcaps"
+          style={{ letterSpacing: "0.16em" }}
+        >
+          {isWin ? "para a próxima visita" : "fique com a gente"}
+        </p>
+        <h2
+          className="font-serif text-q-cream-bright text-[2.4rem] leading-[0.95]"
+          style={{
+            fontVariationSettings: '"opsz" 144, "SOFT" 20, "wght" 400',
+            letterSpacing: "-0.012em",
+          }}
+        >
+          {isWin ? "Parabéns." : "Da próxima."}
+        </h2>
+      </div>
 
       <div
-        className={`
-        p-8 rounded-2xl border-2
-        ${isWin ? "bg-q-charcoal border-q-gold" : "bg-q-charcoal border-q-gray/30"}
-      `}
-      >
-        <div className="mb-4">
-          <Gift
-            size={48}
-            className={isWin ? "text-q-gold mx-auto" : "text-q-gray mx-auto"}
-          />
-        </div>
+        className="h-px w-12 bg-q-gold origin-left animate-reveal-line"
+        aria-hidden="true"
+      />
 
-        <h2
-          className={`text-2xl font-bold mb-2 ${isWin ? "text-q-gold" : "text-q-cream"}`}
+      <div className="space-y-1.5">
+        <p
+          className="font-serif text-q-cream text-[1.55rem] leading-[1.15]"
+          style={{
+            fontVariationSettings: '"opsz" 36, "SOFT" 40, "wght" 450',
+            letterSpacing: "-0.005em",
+          }}
         >
-          {isWin ? "Você ganhou!" : "Quase!"}
-        </h2>
-
-        <p className="text-lg text-q-cream font-semibold mb-1">
-          {result.prize?.name}
+          {displayPrizeName}
         </p>
-        <p className="text-sm text-q-gray mb-4">
-          {result.prize?.description}
+        {displayPrizeDescription && (
+          <p className="text-q-cream-soft text-[0.92rem] leading-relaxed max-w-[28ch]">
+            {displayPrizeDescription}
+          </p>
+        )}
+      </div>
+
+      <div className="pt-4 pb-2 space-y-3 border-t border-b border-q-stone/25 py-7">
+        <p
+          className="text-q-cream-soft text-[0.7rem] smallcaps"
+          style={{ letterSpacing: "0.18em" }}
+        >
+          Código
         </p>
-
-        <div className="bg-q-black rounded-xl p-4 mb-4">
-          <p className="text-xs text-q-gray uppercase tracking-wider mb-1">
-            Seu código
-          </p>
-          <p className="text-2xl font-mono font-bold text-q-gold tracking-widest">
-            {result.coupon_code}
-          </p>
-          <p className="text-xs text-q-gray mt-2">
-            Válido até {expiresDate}
-          </p>
-        </div>
-
-        <p className="text-xs text-q-gray">
-          Apresente este código na sua próxima visita.
+        <p
+          key={result.coupon_code}
+          className="font-serif text-q-gold text-[2rem] sm:text-[2.2rem] leading-none nums-tabular animate-reveal-code"
+          style={{
+            fontVariationSettings: '"opsz" 72, "SOFT" 25, "wght" 450',
+            letterSpacing: "0.24em",
+          }}
+        >
+          {result.coupon_code}
+        </p>
+        <p
+          className="font-serif-small italic text-q-cream-soft text-[0.82rem]"
+          style={{ fontVariationSettings: '"opsz" 12, "SOFT" 60' }}
+        >
+          válido até <span className="not-italic nums-tabular">{expiresDate}</span>
         </p>
       </div>
 
-      <div className="flex gap-3">
-        <button
-          onClick={handleShare}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-q-charcoal border border-q-gray/30 text-q-cream hover:border-q-gold transition-colors"
-        >
-          <Share2 size={18} />
-          Compartilhar
-        </button>
-        <button
-          onClick={onRestart}
-          className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-q-charcoal border border-q-gray/30 text-q-gray hover:text-q-cream hover:border-q-gold transition-colors"
-        >
-          <RotateCcw size={18} />
-        </button>
-      </div>
-
-      <p className="text-xs text-q-gray">
-        Obrigado por avaliar! Te esperamos de volta.
+      <p className="font-serif italic text-q-cream text-[0.95rem]">
+        Apresente quando voltar.
       </p>
-    </div>
+
+      <div className="pt-2 flex flex-col gap-3">
+        <button
+          type="button"
+          onClick={handleShare}
+          className="group flex items-center justify-between gap-2 border-t border-b border-q-gold/60 hover:border-q-gold py-4 px-1 text-q-cream transition-colors duration-300"
+        >
+          <span
+            className="font-serif text-[1rem] smallcaps"
+            style={{
+              fontVariationSettings: '"opsz" 24, "SOFT" 40, "wght" 450',
+              letterSpacing: "0.14em",
+            }}
+          >
+            {shareState === "copied" ? "Copiado" : "Mostrar no Instagram"}
+          </span>
+          <span
+            aria-hidden="true"
+            className="transition-transform duration-300 ease-out group-hover:translate-x-1"
+          >
+            <svg
+              viewBox="0 0 24 12"
+              className="w-6 h-3"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.25"
+            >
+              <path d="M0 6 L22 6 M16 1 L22 6 L16 11" strokeLinejoin="round" />
+            </svg>
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={onRestart}
+          className="self-center text-q-stone/70 hover:text-q-cream-soft text-[0.78rem] font-serif italic transition-colors duration-300 py-2 px-3"
+          style={{ fontVariationSettings: '"opsz" 12, "SOFT" 60' }}
+        >
+          outro avaliador?
+        </button>
+      </div>
+    </section>
   );
 }
