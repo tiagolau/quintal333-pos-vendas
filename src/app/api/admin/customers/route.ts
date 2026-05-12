@@ -1,32 +1,36 @@
 import { NextResponse } from "next/server";
-import { store } from "@/lib/mock-data";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const page = Number(searchParams.get("page") || "1");
-  const search = (searchParams.get("search") || "").toLowerCase();
+  const page = Math.max(1, Number(searchParams.get("page") || "1"));
+  const search = (searchParams.get("search") || "").trim();
   const limit = 20;
   const offset = (page - 1) * limit;
 
-  let filtered = store.customers;
+  let query = supabaseAdmin
+    .from("customers")
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+
   if (search) {
-    filtered = filtered.filter(
-      (c) =>
-        c.name.toLowerCase().includes(search) ||
-        c.phone.includes(search)
-    );
+    // Busca por nome OU telefone
+    query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%`);
   }
 
-  const sorted = [...filtered].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  );
+  const { data, error, count } = await query;
 
-  const paged = sorted.slice(offset, offset + limit);
+  if (error) {
+    console.error("admin:customers", error);
+    return NextResponse.json({ error: "Erro ao buscar clientes" }, { status: 500 });
+  }
 
+  const total = count ?? 0;
   return NextResponse.json({
-    customers: paged,
-    total: filtered.length,
+    customers: data ?? [],
+    total,
     page,
-    pages: Math.ceil(filtered.length / limit),
+    pages: Math.ceil(total / limit),
   });
 }

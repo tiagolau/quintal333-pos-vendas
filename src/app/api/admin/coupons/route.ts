@@ -1,33 +1,32 @@
 import { NextResponse } from "next/server";
-import { store } from "@/lib/mock-data";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const page = Number(searchParams.get("page") || "1");
+  const page = Math.max(1, Number(searchParams.get("page") || "1"));
   const limit = 20;
   const offset = (page - 1) * limit;
 
-  const sorted = [...store.coupons].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  );
+  const { data, error, count } = await supabaseAdmin
+    .from("coupons")
+    .select(
+      "*, customer:customers(name,phone), prize:prizes(name,description)",
+      { count: "exact" }
+    )
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
 
-  const paged = sorted.slice(offset, offset + limit);
+  if (error) {
+    console.error("admin:coupons", error);
+    return NextResponse.json({ error: "Erro ao buscar cupons" }, { status: 500 });
+  }
 
-  const coupons = paged.map((cp) => {
-    const customer = store.customers.find((c) => c.id === cp.customer_id);
-    const prize = store.prizes.find((p) => p.id === cp.prize_id);
-    return {
-      ...cp,
-      customer: customer ? { name: customer.name, phone: customer.phone } : null,
-      prize: prize ? { name: prize.name, description: prize.description } : null,
-    };
-  });
-
+  const total = count ?? 0;
   return NextResponse.json({
-    coupons,
-    total: store.coupons.length,
+    coupons: data ?? [],
+    total,
     page,
-    pages: Math.ceil(store.coupons.length / limit),
+    pages: Math.ceil(total / limit),
   });
 }
 
@@ -38,13 +37,15 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "coupon_id obrigatorio" }, { status: 400 });
   }
 
-  const coupon = store.coupons.find((c) => c.id === coupon_id);
-  if (!coupon) {
-    return NextResponse.json({ error: "Cupom nao encontrado" }, { status: 404 });
-  }
+  const { error } = await supabaseAdmin
+    .from("coupons")
+    .update({ redeemed: true, redeemed_at: new Date().toISOString() })
+    .eq("id", coupon_id);
 
-  coupon.redeemed = true;
-  coupon.redeemed_at = new Date().toISOString();
+  if (error) {
+    console.error("admin:coupons:patch", error);
+    return NextResponse.json({ error: "Erro ao resgatar cupom" }, { status: 500 });
+  }
 
   return NextResponse.json({ success: true });
 }

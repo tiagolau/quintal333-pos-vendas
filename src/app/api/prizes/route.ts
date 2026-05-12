@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
-import { store } from "@/lib/mock-data";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function GET() {
-  const prizes = store.prizes
-    .filter((p) => p.is_active)
-    .sort((a, b) => b.probability - a.probability);
+  const { data, error } = await supabaseAdmin
+    .from("prizes")
+    .select("*")
+    .eq("is_active", true)
+    .order("probability", { ascending: false });
 
-  return NextResponse.json({ prizes });
+  if (error) {
+    console.error("prizes:get", error);
+    return NextResponse.json({ error: "Erro ao buscar prêmios" }, { status: 500 });
+  }
+
+  return NextResponse.json({ prizes: data ?? [] });
 }

@@ -1,9 +1,18 @@
 import { NextResponse } from "next/server";
-import { store } from "@/lib/mock-data";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function GET() {
-  const prizes = [...store.prizes].sort((a, b) => b.probability - a.probability);
-  return NextResponse.json({ prizes });
+  const { data, error } = await supabaseAdmin
+    .from("prizes")
+    .select("*")
+    .order("probability", { ascending: false });
+
+  if (error) {
+    console.error("admin:prizes:get", error);
+    return NextResponse.json({ error: "Erro ao buscar prêmios" }, { status: 500 });
+  }
+
+  return NextResponse.json({ prizes: data ?? [] });
 }
 
 export async function PATCH(request: Request) {
@@ -13,13 +22,20 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "id obrigatorio" }, { status: 400 });
   }
 
-  const prize = store.prizes.find((p) => p.id === id);
-  if (!prize) {
-    return NextResponse.json({ error: "Premio nao encontrado" }, { status: 404 });
+  const patch: Record<string, unknown> = {};
+  if (probability !== undefined) patch.probability = probability;
+  if (is_active !== undefined) patch.is_active = is_active;
+
+  if (Object.keys(patch).length === 0) {
+    return NextResponse.json({ success: true });
   }
 
-  if (probability !== undefined) prize.probability = probability;
-  if (is_active !== undefined) prize.is_active = is_active;
+  const { error } = await supabaseAdmin.from("prizes").update(patch).eq("id", id);
+
+  if (error) {
+    console.error("admin:prizes:patch", error);
+    return NextResponse.json({ error: "Erro ao atualizar prêmio" }, { status: 500 });
+  }
 
   return NextResponse.json({ success: true });
 }

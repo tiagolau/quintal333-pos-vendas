@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { store } from "@/lib/mock-data";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function POST(request: Request) {
   try {
@@ -23,47 +23,58 @@ export async function POST(request: Request) {
       );
     }
 
-    // Upsert customer
-    let existing = store.customers.find((c) => c.phone === customer.phone);
-    let customerId: string;
+    const { data: upserted, error: upsertError } = await supabaseAdmin
+      .from("customers")
+      .upsert(
+        {
+          name: customer.name.trim(),
+          phone: customer.phone,
+          birthday: customer.birthday || null,
+          accepts_whatsapp: !!customer.accepts_whatsapp,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "phone" }
+      )
+      .select("id")
+      .single();
 
-    if (existing) {
-      customerId = existing.id;
-      existing.name = customer.name;
-      existing.birthday = customer.birthday || null;
-      existing.accepts_whatsapp = customer.accepts_whatsapp;
-      existing.updated_at = new Date().toISOString();
-    } else {
-      customerId = store.uid();
-      store.customers.push({
-        id: customerId,
-        name: customer.name,
-        phone: customer.phone,
-        birthday: customer.birthday || null,
-        accepts_whatsapp: customer.accepts_whatsapp,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
+    if (upsertError || !upserted) {
+      console.error("submit:upsert", upsertError);
+      return NextResponse.json(
+        { error: "Erro ao salvar cliente" },
+        { status: 500 }
+      );
     }
 
-    // Create review
-    const reviewId = store.uid();
-    store.reviews.push({
-      id: reviewId,
-      customer_id: customerId,
-      pizza_rating: ratings.pizza,
-      service_rating: ratings.service,
-      ambiance_rating: ratings.ambiance,
-      comment: ratings.comment?.trim() || null,
-      visit_type: "dine_in",
-      created_at: new Date().toISOString(),
-    });
+    const customerId = upserted.id;
+
+    const { data: review, error: reviewError } = await supabaseAdmin
+      .from("reviews")
+      .insert({
+        customer_id: customerId,
+        pizza_rating: ratings.pizza,
+        service_rating: ratings.service,
+        ambiance_rating: ratings.ambiance,
+        comment: ratings.comment?.trim() || null,
+        visit_type: "dine_in",
+      })
+      .select("id")
+      .single();
+
+    if (reviewError || !review) {
+      console.error("submit:review", reviewError);
+      return NextResponse.json(
+        { error: "Erro ao salvar avaliação" },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       customer_id: customerId,
-      review_id: reviewId,
+      review_id: review.id,
     });
-  } catch {
+  } catch (e) {
+    console.error("submit:exception", e);
     return NextResponse.json(
       { error: "Erro interno do servidor" },
       { status: 500 }
