@@ -33,7 +33,7 @@ export default function PrizesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-q-cream">Premios da Roleta</h1>
+        <h1 className="text-2xl font-bold text-q-cream">Prêmios da Roleta</h1>
         <span
           className={`text-sm px-3 py-1 rounded-lg ${
             totalProbability === 100

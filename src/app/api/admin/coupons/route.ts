@@ -34,7 +34,7 @@ export async function PATCH(request: Request) {
   const { coupon_id } = await request.json();
 
   if (!coupon_id) {
-    return NextResponse.json({ error: "coupon_id obrigatorio" }, { status: 400 });
+    return NextResponse.json({ error: "coupon_id obrigatório" }, { status: 400 });
   }
 
   const { error } = await supabaseAdmin

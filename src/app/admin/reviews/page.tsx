@@ -39,7 +39,7 @@ export default function ReviewsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-q-cream">Avaliacoes</h1>
+      <h1 className="text-2xl font-bold text-q-cream">Avaliações</h1>
 
       {loading ? (
         <div className="flex justify-center py-10">
@@ -59,7 +59,7 @@ export default function ReviewsPage() {
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <p className="font-semibold text-q-cream">
-                      {review.customer?.name || "Anonimo"}
+                      {review.customer?.name || "Anônimo"}
                     </p>
                     <p className="text-xs text-q-gray">
                       {review.customer?.phone} |{" "}

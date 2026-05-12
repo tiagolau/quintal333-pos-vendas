@@ -8,12 +8,12 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Quintal 333 | Avalie sua experiencia",
+  title: "Quintal 333 | Avalie sua experiência",
   description:
-    "Avalie sua experiencia no Quintal 333 e gire a roleta para ganhar premios!",
+    "Avalie sua experiência no Quintal 333 e gire a roleta para ganhar prêmios!",
   openGraph: {
-    title: "Quintal 333 | Avalie sua experiencia",
-    description: "Avalie e gire a roleta para ganhar premios!",
+    title: "Quintal 333 | Avalie sua experiência",
+    description: "Avalie e gire a roleta para ganhar prêmios!",
     type: "website",
   },
 };

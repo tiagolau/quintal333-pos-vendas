@@ -21,6 +21,7 @@ export async function POST(request: Request) {
       );
     }
 
+
     const { data: existing } = await supabaseAdmin
       .from("coupons")
       .select("code, expires_at")

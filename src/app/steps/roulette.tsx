@@ -67,7 +67,7 @@ export function RouletteStep({
         Gire a roleta!
       </h2>
       <p className="text-q-gray text-sm">
-        Toque no botao e descubra seu premio
+        Toque no botão e descubra seu prêmio
       </p>
       <RouletteWheel
         prizes={prizes}

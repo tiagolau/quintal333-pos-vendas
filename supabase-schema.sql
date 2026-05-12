@@ -63,14 +63,14 @@ create index if not exists idx_quintal_coupons_customer on quintal.coupons(custo
 create index if not exists idx_quintal_coupons_code on quintal.coupons(code);
 create index if not exists idx_quintal_customers_phone on quintal.customers(phone);
 
--- Premios iniciais (conforme PRD)
+-- Prêmios iniciais (conforme PRD)
 insert into quintal.prizes (name, description, probability) values
-  ('10% OFF', '10% de desconto na proxima visita', 30),
-  ('Sobremesa Gratis', 'Uma sobremesa por nossa conta na proxima visita', 15),
-  ('Entrada Gratis', 'Um petisco gratis na proxima visita', 10),
-  ('15% OFF', '15% de desconto na proxima visita', 8),
-  ('Bebida Cortesia', 'Uma bebida por nossa conta na proxima visita', 7),
-  ('Quase!', 'Nao foi dessa vez... Mas use QUINTAL5 para 5% off!', 25),
-  ('Pizza Gratis', 'Uma pizza de 4 fatias por nossa conta!', 3),
-  ('Aniversariante VIP', 'Desconto especial de aniversario!', 2)
+  ('10% OFF', '10% de desconto na próxima visita', 30),
+  ('Sobremesa Grátis', 'Uma sobremesa por nossa conta na próxima visita', 15),
+  ('Entrada Grátis', 'Um petisco grátis na próxima visita', 10),
+  ('15% OFF', '15% de desconto na próxima visita', 8),
+  ('Bebida Cortesia', 'Uma bebida por nossa conta na próxima visita', 7),
+  ('Quase!', 'Não foi dessa vez... Mas use QUINTAL5 para 5% off!', 25),
+  ('Pizza Grátis', 'Uma pizza de 4 fatias por nossa conta!', 3),
+  ('Aniversariante VIP', 'Desconto especial de aniversário!', 2)
 on conflict do nothing;

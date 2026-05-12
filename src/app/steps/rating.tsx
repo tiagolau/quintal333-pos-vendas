@@ -16,10 +16,10 @@ export function RatingStep({ ratings, onChange, onNext }: RatingStepProps) {
     <div className="space-y-6">
       <div className="text-center">
         <h2 className="text-xl font-semibold text-q-cream">
-          Como foi sua experiencia?
+          Como foi sua experiência?
         </h2>
         <p className="text-q-gray text-sm mt-1">
-          Avalie e gire a roleta para ganhar um premio!
+          Avalie e gire a roleta para ganhar um prêmio!
         </p>
       </div>
 
@@ -43,7 +43,7 @@ export function RatingStep({ ratings, onChange, onNext }: RatingStepProps) {
 
       <div>
         <label className="block text-sm text-q-gray mb-2">
-          Comentario (opcional)
+          Comentário (opcional)
         </label>
         <textarea
           value={ratings.comment}
@@ -70,7 +70,7 @@ export function RatingStep({ ratings, onChange, onNext }: RatingStepProps) {
           }
         `}
       >
-        Proximo
+        Próximo
       </button>
     </div>
   );

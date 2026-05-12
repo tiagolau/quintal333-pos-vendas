@@ -31,14 +31,15 @@ export default function CustomersPage() {
   }, [page, search, fetchCustomers]);
 
   const exportCSV = () => {
-    const header = "Nome,Telefone,Aniversario,WhatsApp,Cadastro\n";
+    const header = "Nome,Telefone,Aniversário,WhatsApp,Cadastro\n";
     const rows = customers
       .map(
         (c) =>
-          `"${c.name}","${c.phone}","${c.birthday || ""}","${c.accepts_whatsapp ? "Sim" : "Nao"}","${new Date(c.created_at).toLocaleDateString("pt-BR")}"`
+          `"${c.name}","${c.phone}","${c.birthday || ""}","${c.accepts_whatsapp ? "Sim" : "Não"}","${new Date(c.created_at).toLocaleDateString("pt-BR")}"`
       )
       .join("\n");
-    const blob = new Blob([header + rows], { type: "text/csv;charset=utf-8" });
+    // BOM para Excel reconhecer UTF-8 e exibir acentos corretamente
+    const blob = new Blob(["﻿" + header + rows], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -87,7 +88,7 @@ export default function CustomersPage() {
               <tr className="text-left text-xs text-q-gray uppercase tracking-wider border-b border-q-gray/10">
                 <th className="pb-3 px-2">Nome</th>
                 <th className="pb-3 px-2">Telefone</th>
-                <th className="pb-3 px-2">Aniversario</th>
+                <th className="pb-3 px-2">Aniversário</th>
                 <th className="pb-3 px-2">WhatsApp</th>
                 <th className="pb-3 px-2">Cadastro</th>
               </tr>
@@ -110,7 +111,7 @@ export default function CustomersPage() {
                           : "bg-q-gray/20 text-q-gray"
                       }`}
                     >
-                      {c.accepts_whatsapp ? "Sim" : "Nao"}
+                      {c.accepts_whatsapp ? "Sim" : "Não"}
                     </span>
                   </td>
                   <td className="py-3 px-2 text-q-gray text-sm">

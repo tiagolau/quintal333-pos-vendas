@@ -19,7 +19,7 @@ export async function PATCH(request: Request) {
   const { id, probability, is_active } = await request.json();
 
   if (!id) {
-    return NextResponse.json({ error: "id obrigatorio" }, { status: 400 });
+    return NextResponse.json({ error: "id obrigatório" }, { status: 400 });
   }
 
   const patch: Record<string, unknown> = {};

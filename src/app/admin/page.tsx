@@ -80,7 +80,7 @@ export default function AdminDashboard() {
         />
         <StatCard
           icon={TrendingUp}
-          label="Avaliacoes"
+          label="Avaliações"
           value={stats.total_reviews}
           color="bg-green-500/20 text-green-400"
         />
@@ -96,7 +96,7 @@ export default function AdminDashboard() {
       {/* Quick overview of ratings */}
       <div className="bg-q-charcoal rounded-xl p-6">
         <h2 className="text-lg font-semibold text-q-cream mb-4">
-          Medias de Avaliacao
+          Médias de Avaliação
         </h2>
         <div className="space-y-4">
           {[

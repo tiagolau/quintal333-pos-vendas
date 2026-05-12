@@ -11,14 +11,14 @@ export async function POST(request: Request) {
       customer.phone.length < 10
     ) {
       return NextResponse.json(
-        { error: "Nome e WhatsApp sao obrigatorios" },
+        { error: "Nome e WhatsApp são obrigatórios" },
         { status: 400 }
       );
     }
 
     if (!ratings?.pizza || !ratings?.service || !ratings?.ambiance) {
       return NextResponse.json(
-        { error: "Todas as avaliacoes sao obrigatorias" },
+        { error: "Todas as avaliações são obrigatórias" },
         { status: 400 }
       );
     }

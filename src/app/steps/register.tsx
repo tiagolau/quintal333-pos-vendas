@@ -55,7 +55,7 @@ export function RegisterStep({
           Agora seus dados para girar a roleta!
         </h2>
         <p className="text-q-gray text-sm mt-1">
-          Rapido e simples, prometemos.
+          Rápido e simples, prometemos.
         </p>
       </div>
 
@@ -81,7 +81,7 @@ export function RegisterStep({
 
         <div>
           <label className="block text-sm text-q-gray mb-2">
-            Aniversario{" "}
+            Aniversário{" "}
             <span className="text-q-gold text-xs">
               (ganhe um presente especial!)
             </span>

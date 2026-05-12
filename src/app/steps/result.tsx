@@ -16,7 +16,7 @@ export function ResultStep({ result, onRestart }: ResultStepProps) {
   const handleShare = async () => {
     const text = isWin
       ? `Ganhei ${result.prize?.name} no Quintal 333! A melhor pizza artesanal de MG. @quintal333`
-      : `Acabei de avaliar minha experiencia no Quintal 333! A melhor pizza artesanal de MG. @quintal333`;
+      : `Acabei de avaliar minha experiência no Quintal 333! A melhor pizza artesanal de MG. @quintal333`;
 
     if (navigator.share) {
       try {
@@ -49,7 +49,7 @@ export function ResultStep({ result, onRestart }: ResultStepProps) {
         <h2
           className={`text-2xl font-bold mb-2 ${isWin ? "text-q-gold" : "text-q-cream"}`}
         >
-          {isWin ? "Voce ganhou!" : "Quase!"}
+          {isWin ? "Você ganhou!" : "Quase!"}
         </h2>
 
         <p className="text-lg text-q-cream font-semibold mb-1">
@@ -61,18 +61,18 @@ export function ResultStep({ result, onRestart }: ResultStepProps) {
 
         <div className="bg-q-black rounded-xl p-4 mb-4">
           <p className="text-xs text-q-gray uppercase tracking-wider mb-1">
-            Seu codigo
+            Seu código
           </p>
           <p className="text-2xl font-mono font-bold text-q-gold tracking-widest">
             {result.coupon_code}
           </p>
           <p className="text-xs text-q-gray mt-2">
-            Valido ate {expiresDate}
+            Válido até {expiresDate}
           </p>
         </div>
 
         <p className="text-xs text-q-gray">
-          Apresente este codigo na sua proxima visita.
+          Apresente este código na sua próxima visita.
         </p>
       </div>
 

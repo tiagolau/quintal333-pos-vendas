@@ -14,10 +14,10 @@ import {
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: BarChart3 },
-  { href: "/admin/reviews", label: "Avaliacoes", icon: MessageSquare },
+  { href: "/admin/reviews", label: "Avaliações", icon: MessageSquare },
   { href: "/admin/customers", label: "Clientes", icon: Users },
   { href: "/admin/coupons", label: "Cupons", icon: Ticket },
-  { href: "/admin/prizes", label: "Premios", icon: Trophy },
+  { href: "/admin/prizes", label: "Prêmios", icon: Trophy },
 ];
 
 export default function AdminLayout({
