@@ -1,8 +1,17 @@
 -- Quintal 333 - Sistema de Pos-Vendas
--- Execute este SQL no Supabase SQL Editor
+-- Schema dedicado para isolamento em Supabase compartilhado
+-- Execute via psql no Postgres OU via SQL Editor do Studio.
+-- Lembre-se: o PostgREST precisa ter `quintal` em PGRST_DB_SCHEMAS.
+
+create schema if not exists quintal;
+grant usage on schema quintal to anon, authenticated, service_role;
+grant all on all tables in schema quintal to anon, authenticated, service_role;
+grant all on all sequences in schema quintal to anon, authenticated, service_role;
+alter default privileges in schema quintal grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema quintal grant all on sequences to anon, authenticated, service_role;
 
 -- Clientes
-create table if not exists customers (
+create table if not exists quintal.customers (
   id uuid default gen_random_uuid() primary key,
   name text not null,
   phone text not null unique,
@@ -13,9 +22,9 @@ create table if not exists customers (
 );
 
 -- Avaliacoes
-create table if not exists reviews (
+create table if not exists quintal.reviews (
   id uuid default gen_random_uuid() primary key,
-  customer_id uuid references customers(id) on delete cascade,
+  customer_id uuid references quintal.customers(id) on delete cascade,
   pizza_rating smallint not null check (pizza_rating between 1 and 5),
   service_rating smallint not null check (service_rating between 1 and 5),
   ambiance_rating smallint not null check (ambiance_rating between 1 and 5),
@@ -25,7 +34,7 @@ create table if not exists reviews (
 );
 
 -- Premios
-create table if not exists prizes (
+create table if not exists quintal.prizes (
   id uuid default gen_random_uuid() primary key,
   name text not null,
   description text not null,
@@ -35,11 +44,11 @@ create table if not exists prizes (
 );
 
 -- Cupons
-create table if not exists coupons (
+create table if not exists quintal.coupons (
   id uuid default gen_random_uuid() primary key,
-  customer_id uuid references customers(id) on delete cascade,
-  review_id uuid references reviews(id) on delete cascade,
-  prize_id uuid references prizes(id) on delete set null,
+  customer_id uuid references quintal.customers(id) on delete cascade,
+  review_id uuid references quintal.reviews(id) on delete cascade,
+  prize_id uuid references quintal.prizes(id) on delete set null,
   code text not null unique,
   redeemed boolean default false,
   redeemed_at timestamptz,
@@ -48,14 +57,14 @@ create table if not exists coupons (
 );
 
 -- Indices
-create index if not exists idx_reviews_customer on reviews(customer_id);
-create index if not exists idx_reviews_created on reviews(created_at desc);
-create index if not exists idx_coupons_customer on coupons(customer_id);
-create index if not exists idx_coupons_code on coupons(code);
-create index if not exists idx_customers_phone on customers(phone);
+create index if not exists idx_quintal_reviews_customer on quintal.reviews(customer_id);
+create index if not exists idx_quintal_reviews_created on quintal.reviews(created_at desc);
+create index if not exists idx_quintal_coupons_customer on quintal.coupons(customer_id);
+create index if not exists idx_quintal_coupons_code on quintal.coupons(code);
+create index if not exists idx_quintal_customers_phone on quintal.customers(phone);
 
 -- Premios iniciais (conforme PRD)
-insert into prizes (name, description, probability) values
+insert into quintal.prizes (name, description, probability) values
   ('10% OFF', '10% de desconto na proxima visita', 30),
   ('Sobremesa Gratis', 'Uma sobremesa por nossa conta na proxima visita', 15),
   ('Entrada Gratis', 'Um petisco gratis na proxima visita', 10),
@@ -63,22 +72,5 @@ insert into prizes (name, description, probability) values
   ('Bebida Cortesia', 'Uma bebida por nossa conta na proxima visita', 7),
   ('Quase!', 'Nao foi dessa vez... Mas use QUINTAL5 para 5% off!', 25),
   ('Pizza Gratis', 'Uma pizza de 4 fatias por nossa conta!', 3),
-  ('Aniversariante VIP', 'Desconto especial de aniversario!', 2);
-
--- RLS (Row Level Security)
-alter table customers enable row level security;
-alter table reviews enable row level security;
-alter table prizes enable row level security;
-alter table coupons enable row level security;
-
--- Politicas publicas de leitura para prizes (todos podem ver premios)
-create policy "Prizes are viewable by everyone" on prizes for select using (true);
-
--- Politicas de insercao para o fluxo do cliente (via anon key)
-create policy "Anyone can create customers" on customers for insert with check (true);
-create policy "Anyone can read own customer by phone" on customers for select using (true);
-create policy "Anyone can update own customer" on customers for update using (true);
-create policy "Anyone can create reviews" on reviews for insert with check (true);
-create policy "Anyone can create coupons" on coupons for insert with check (true);
-create policy "Anyone can read coupons" on coupons for select using (true);
-create policy "Anyone can read reviews" on reviews for select using (true);
+  ('Aniversariante VIP', 'Desconto especial de aniversario!', 2)
+on conflict do nothing;
