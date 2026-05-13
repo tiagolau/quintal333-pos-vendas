@@ -136,7 +136,6 @@ export function RouletteWheel({
   const cy = VIEW / 2;
   const outerR = 150;
   const innerR = 28;
-  const labelR = 100;
 
   const arcPath = (i: number) => {
     const start = (i * segmentAngle - 90) * (Math.PI / 180);
@@ -160,10 +159,24 @@ export function RouletteWheel({
     ].join(" ");
   };
 
-  const truncateLabel = (name: string) => {
+  // Rótulos curtos curados para legibilidade em mobile. Fallback: nome completo.
+  const SHORT_LABELS: Record<string, { primary: string; kicker?: string }> = {
+    "10% OFF": { primary: "10%", kicker: "off" },
+    "15% OFF": { primary: "15%", kicker: "off" },
+    "Sobremesa Grátis": { primary: "Sobremesa", kicker: "grátis" },
+    "Entrada Grátis": { primary: "Entrada", kicker: "grátis" },
+    "Pizza Grátis": { primary: "Pizza", kicker: "grátis" },
+    "Bebida Cortesia": { primary: "Bebida", kicker: "cortesia" },
+    "Quase!": { primary: "Quase!" },
+    "Aniversariante VIP": { primary: "Aniversário", kicker: "VIP" },
+  };
+
+  const shortLabel = (name: string): { primary: string; kicker?: string } => {
+    const hit = SHORT_LABELS[name.trim()];
+    if (hit) return hit;
     const n = name.trim();
-    if (n.length <= 16) return n;
-    return n.slice(0, 15).trimEnd() + "…";
+    if (n.length <= 11) return { primary: n };
+    return { primary: n.slice(0, 10).trimEnd() + "…" };
   };
 
   return (
@@ -261,38 +274,73 @@ export function RouletteWheel({
             );
           })}
 
-          {/* Labels (radial) */}
+          {/* Labels (tangenciais, 2 linhas: nome + kicker) */}
           {prizes.map((prize, i) => {
             const midAngle = (i + 0.5) * segmentAngle - 90;
             const rad = (midAngle * Math.PI) / 180;
-            const tx = cx + labelR * Math.cos(rad);
-            const ty = cy + labelR * Math.sin(rad);
+            // Linhas alinhadas radialmente: primary mais externo (R=108), kicker mais interno (R=80)
+            const primaryR = 108;
+            const kickerR = 78;
+            const px = cx + primaryR * Math.cos(rad);
+            const py = cy + primaryR * Math.sin(rad);
+            const kx = cx + kickerR * Math.cos(rad);
+            const ky = cy + kickerR * Math.sin(rad);
+            // Rotação tangencial: texto fica perpendicular ao raio (lê como na borda de uma moeda)
             const rot =
               midAngle > 0 && midAngle < 180 ? midAngle - 90 : midAngle + 90;
             const isWinner = winnerIndex === i;
             const otherWinner = winnerIndex !== null && !isWinner;
+            const { primary, kicker } = shortLabel(prize.name);
+            const labelFill = isWinner ? "var(--q-gold)" : "var(--q-cream)";
+            const kickerFill = isWinner
+              ? "var(--q-gold)"
+              : "var(--q-cream-soft)";
             return (
-              <text
+              <g
                 key={prize.id}
-                x={tx}
-                y={ty}
-                fill={isWinner ? "var(--q-gold)" : "var(--q-cream-soft)"}
-                opacity={otherWinner ? 0.35 : 1}
-                fontSize="8.5"
-                fontFamily="var(--font-fraunces), Georgia, serif"
-                fontStyle="italic"
-                fontWeight="400"
-                textAnchor="middle"
-                dominantBaseline="middle"
-                letterSpacing="0.12"
-                transform={`rotate(${rot} ${tx} ${ty})`}
+                opacity={otherWinner ? 0.32 : 1}
                 style={{
-                  transition:
-                    "opacity 600ms var(--ease-out-expo), fill 400ms ease-out",
+                  transition: "opacity 600ms var(--ease-out-expo)",
                 }}
               >
-                {truncateLabel(prize.name)}
-              </text>
+                <text
+                  x={px}
+                  y={py}
+                  fill={labelFill}
+                  fontSize="12"
+                  fontFamily="var(--font-fraunces), Georgia, serif"
+                  fontStyle="italic"
+                  fontWeight="500"
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  letterSpacing="0.005em"
+                  transform={`rotate(${rot} ${px} ${py})`}
+                  style={{ transition: "fill 400ms ease-out" }}
+                >
+                  {primary}
+                </text>
+                {kicker && (
+                  <text
+                    x={kx}
+                    y={ky}
+                    fill={kickerFill}
+                    fontSize="7"
+                    fontFamily="var(--font-fraunces), Georgia, serif"
+                    fontStyle="italic"
+                    fontWeight="400"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    letterSpacing="0.18em"
+                    transform={`rotate(${rot} ${kx} ${ky})`}
+                    style={{
+                      textTransform: "uppercase",
+                      transition: "fill 400ms ease-out",
+                    }}
+                  >
+                    {kicker}
+                  </text>
+                )}
+              </g>
             );
           })}
 
