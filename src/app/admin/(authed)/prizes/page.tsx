@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Plus, Pencil, Trash2, Check, X } from "lucide-react";
 import type { Prize } from "@/lib/types";
+import { rebalanceTo100, normalizeTo100 } from "@/lib/prize-rebalance";
 
 interface EditState {
   name: string;
@@ -18,6 +19,8 @@ const NEW_DRAFT: EditState = {
   is_active: true,
 };
 
+const PERSIST_DEBOUNCE_MS = 400;
+
 export default function PrizesPage() {
   const [prizes, setPrizes] = useState<Prize[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,12 +29,20 @@ export default function PrizesPage() {
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState<EditState>(NEW_DRAFT);
   const [saving, setSaving] = useState(false);
+  const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastPersistedRef = useRef<Map<string, number>>(new Map());
 
   const fetchPrizes = useCallback(() => {
     setLoading(true);
     fetch("/api/admin/prizes")
       .then((r) => r.json())
-      .then((data) => setPrizes(data.prizes ?? []))
+      .then((data) => {
+        const list: Prize[] = data.prizes ?? [];
+        setPrizes(list);
+        lastPersistedRef.current = new Map(
+          list.map((p) => [p.id, p.probability]),
+        );
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -39,14 +50,63 @@ export default function PrizesPage() {
     fetchPrizes();
   }, [fetchPrizes]);
 
-  const quickPatch = async (id: string, updates: Partial<Prize>) => {
-    await fetch("/api/admin/prizes", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, ...updates }),
-    });
-    fetchPrizes();
-  };
+  // PATCH em paralelo dos prêmios cuja probability mudou desde o último persist
+  const persistChanged = useCallback(async (next: Prize[]) => {
+    const last = lastPersistedRef.current;
+    const changed = next.filter((p) => last.get(p.id) !== p.probability);
+    if (changed.length === 0) return;
+    await Promise.all(
+      changed.map((p) =>
+        fetch("/api/admin/prizes", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: p.id, probability: p.probability }),
+        }),
+      ),
+    );
+    // Atualiza o snapshot para próximos diffs
+    const newSnap = new Map(last);
+    for (const p of next) newSnap.set(p.id, p.probability);
+    lastPersistedRef.current = newSnap;
+  }, []);
+
+  const scheduledPersist = useCallback(
+    (next: Prize[]) => {
+      if (persistTimer.current) clearTimeout(persistTimer.current);
+      persistTimer.current = setTimeout(() => {
+        void persistChanged(next);
+      }, PERSIST_DEBOUNCE_MS);
+    },
+    [persistChanged],
+  );
+
+  // Slider inline: rebalanceia localmente + agenda persist
+  const handleProbabilityChange = useCallback(
+    (id: string, newValue: number) => {
+      setPrizes((curr) => {
+        const next = rebalanceTo100(curr, id, newValue);
+        scheduledPersist(next);
+        return next;
+      });
+    },
+    [scheduledPersist],
+  );
+
+  // Toggle ativo: PATCH single, sem rebalance (ativo/inativo não muda
+  // o total — manter a regra atual: prob fica no banco mesmo se inativo)
+  const toggleActive = useCallback(
+    async (id: string, is_active: boolean) => {
+      await fetch("/api/admin/prizes", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, is_active }),
+      });
+      setPrizes((curr) =>
+        curr.map((p) => (p.id === id ? { ...p, is_active } : p)),
+      );
+    },
+    [],
+  );
 
   const startEdit = (prize: Prize) => {
     setEditingId(prize.id);
@@ -67,26 +127,38 @@ export default function PrizesPage() {
     if (!editingId || !edit) return;
     setSaving(true);
     try {
-      const res = await fetch("/api/admin/prizes", {
+      // 1) PATCH dos campos não-probabilísticos
+      await fetch("/api/admin/prizes", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: editingId,
           name: edit.name,
           description: edit.description,
-          probability: edit.probability,
           is_active: edit.is_active,
         }),
       });
-      if (res.ok) {
-        cancelEdit();
-        fetchPrizes();
+      // 2) Rebalance se probabilidade mudou
+      const current = prizes.find((p) => p.id === editingId);
+      if (current && current.probability !== edit.probability) {
+        const rebalanced = rebalanceTo100(prizes, editingId, edit.probability);
+        setPrizes(rebalanced);
+        await persistChanged(rebalanced);
       } else {
-        const data = (await res.json().catch(() => ({}))) as {
-          error?: string;
-        };
-        alert(data.error || "Erro ao salvar");
+        // Apenas refetch para refletir name/description novos
+        const updated = prizes.map((p) =>
+          p.id === editingId
+            ? {
+                ...p,
+                name: edit.name,
+                description: edit.description,
+                is_active: edit.is_active,
+              }
+            : p,
+        );
+        setPrizes(updated);
       }
+      cancelEdit();
     } finally {
       setSaving(false);
     }
@@ -99,12 +171,23 @@ export default function PrizesPage() {
       )
     )
       return;
-    const res = await fetch(`/api/admin/prizes?id=${id}`, {
-      method: "DELETE",
-    });
-    if (res.ok) {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/prizes?id=${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) return;
+
+      // Remove localmente e normaliza para 100 absorvendo o "buraco"
+      const remaining = prizes.filter((p) => p.id !== id);
+      const normalized = normalizeTo100(remaining);
+      setPrizes(normalized);
+      // Limpa do snapshot e persiste os mudados
+      lastPersistedRef.current.delete(id);
+      await persistChanged(normalized);
       cancelEdit();
-      fetchPrizes();
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -130,15 +213,23 @@ export default function PrizesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(draft),
       });
-      if (res.ok) {
-        cancelCreate();
-        fetchPrizes();
-      } else {
+      if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as {
           error?: string;
         };
         alert(data.error || "Erro ao criar");
+        return;
       }
+      const { prize: created } = (await res.json()) as { prize: Prize };
+
+      // Adiciona localmente e rebalanceia: o novo entra com `draft.probability`,
+      // os outros absorvem a diferença
+      const withNew = [...prizes, created];
+      const rebalanced = rebalanceTo100(withNew, created.id, draft.probability);
+      setPrizes(rebalanced);
+      lastPersistedRef.current.set(created.id, created.probability);
+      await persistChanged(rebalanced);
+      cancelCreate();
     } finally {
       setSaving(false);
     }
@@ -149,7 +240,12 @@ export default function PrizesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-2xl font-bold text-q-cream">Prêmios da Roleta</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-q-cream">Prêmios da Roleta</h1>
+          <p className="text-xs text-q-gray mt-0.5">
+            Mexa em um slider — os outros se ajustam pra manter 100%.
+          </p>
+        </div>
         <div className="flex items-center gap-3">
           <span
             className={`text-sm px-3 py-1 rounded-lg ${
@@ -158,8 +254,7 @@ export default function PrizesPage() {
                 : "bg-q-red/20 text-q-red"
             }`}
           >
-            Total: {totalProbability}%{" "}
-            {totalProbability !== 100 && "(deve ser 100%)"}
+            Total: {totalProbability}%
           </span>
           {!creating && (
             <button
@@ -215,9 +310,7 @@ export default function PrizesPage() {
                             type="checkbox"
                             checked={prize.is_active}
                             onChange={(e) =>
-                              quickPatch(prize.id, {
-                                is_active: e.target.checked,
-                              })
+                              toggleActive(prize.id, e.target.checked)
                             }
                             className="w-5 h-5 rounded accent-q-gold"
                           />
@@ -242,12 +335,13 @@ export default function PrizesPage() {
                       <input
                         type="range"
                         min={0}
-                        max={50}
+                        max={100}
                         value={prize.probability}
                         onChange={(e) =>
-                          quickPatch(prize.id, {
-                            probability: Number(e.target.value),
-                          })
+                          handleProbabilityChange(
+                            prize.id,
+                            Number(e.target.value),
+                          )
                         }
                         className="flex-1 accent-q-gold"
                       />
@@ -259,7 +353,7 @@ export default function PrizesPage() {
                       <div
                         className="h-full bg-q-gold rounded-full transition-all"
                         style={{
-                          width: `${(prize.probability / 50) * 100}%`,
+                          width: `${prize.probability}%`,
                         }}
                       />
                     </div>
@@ -332,12 +426,15 @@ function PrizeForm({
 
       <label className="block">
         <span className="text-xs uppercase tracking-wider text-q-gray block mb-1.5">
-          Probabilidade ({value.probability}%)
+          Probabilidade ({value.probability}%){" "}
+          <span className="text-q-gold/70 normal-case tracking-normal">
+            — outros prêmios se ajustam ao salvar
+          </span>
         </span>
         <input
           type="range"
           min={0}
-          max={50}
+          max={100}
           value={value.probability}
           onChange={(e) =>
             onChange({ ...value, probability: Number(e.target.value) })
