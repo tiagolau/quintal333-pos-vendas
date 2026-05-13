@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { FlowState, Prize } from "@/lib/types";
 import { RatingStep } from "./steps/rating";
-import { RegisterStep } from "./steps/register";
+import { RegisterStep, type SubmitResult } from "./steps/register";
 import { RouletteStep } from "./steps/roulette";
 import { ResultStep } from "./steps/result";
 import Image from "next/image";
@@ -33,10 +33,25 @@ export default function Home() {
     setState((s) => ({ ...s, step: "register" }));
   };
 
-  const handleRegisterComplete = (cId: string, rId: string) => {
-    setCustomerId(cId);
-    setReviewId(rId);
-    setState((s) => ({ ...s, step: "roulette" }));
+  const handleRegisterComplete = (data: SubmitResult) => {
+    setCustomerId(data.customerId);
+    setReviewId(data.reviewId);
+    if (data.existingCoupon) {
+      // Cliente ja participou nos ultimos 90 dias — mostra o cupom ativo dele
+      // em vez de deixar girar a roleta de novo. Avaliacao foi salva normal.
+      setState((s) => ({
+        ...s,
+        step: "result",
+        result: {
+          prize: data.existingCoupon!.prize,
+          coupon_code: data.existingCoupon!.code,
+          expires_at: data.existingCoupon!.expires_at,
+          isExisting: true,
+        },
+      }));
+    } else {
+      setState((s) => ({ ...s, step: "roulette" }));
+    }
   };
 
   const handleSpinComplete = (

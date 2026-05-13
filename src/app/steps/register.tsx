@@ -2,13 +2,23 @@
 
 import { useState } from "react";
 import { PhoneInput } from "@/components/phone-input";
-import type { FlowState } from "@/lib/types";
+import type { FlowState, Prize } from "@/lib/types";
+
+export interface SubmitResult {
+  customerId: string;
+  reviewId: string;
+  existingCoupon: {
+    code: string;
+    expires_at: string;
+    prize: Prize;
+  } | null;
+}
 
 interface RegisterStepProps {
   customer: FlowState["customer"];
   ratings: FlowState["ratings"];
   onChange: (customer: FlowState["customer"]) => void;
-  onComplete: (customerId: string, reviewId: string) => void;
+  onComplete: (result: SubmitResult) => void;
 }
 
 export function RegisterStep({
@@ -41,7 +51,11 @@ export function RegisterStep({
       }
 
       const data = await res.json();
-      onComplete(data.customer_id, data.review_id);
+      onComplete({
+        customerId: data.customer_id,
+        reviewId: data.review_id,
+        existingCoupon: data.existing_coupon ?? null,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro inesperado");
     } finally {

@@ -22,21 +22,48 @@ export async function POST(request: Request) {
     }
 
 
-    const { data: existing } = await supabaseAdmin
+    // Idempotente: se já houve spin para esse review, devolve o cupom existente
+    const { data: existingByReview } = await supabaseAdmin
       .from("coupons")
       .select("code, expires_at")
       .eq("review_id", review_id)
       .maybeSingle();
 
-    if (existing) {
+    if (existingByReview) {
       return NextResponse.json({
-        coupon_code: existing.code,
-        expires_at: existing.expires_at,
+        coupon_code: existingByReview.code,
+        expires_at: existingByReview.expires_at,
         already_spun: true,
       });
     }
 
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    // Regra: 1 cupom por cliente a cada 90 dias. Se houver outro cupom
+    // emitido pra esse customer_id em <90 dias, retorna ele em vez de
+    // gerar novo. Protege contra bypass do frontend.
+    const ninetyDaysAgo = new Date(
+      Date.now() - 90 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    const { data: recentCoupon } = await supabaseAdmin
+      .from("coupons")
+      .select("code, expires_at")
+      .eq("customer_id", customer_id)
+      .gte("created_at", ninetyDaysAgo)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (recentCoupon) {
+      return NextResponse.json({
+        coupon_code: recentCoupon.code,
+        expires_at: recentCoupon.expires_at,
+        already_spun: true,
+      });
+    }
+
+    // Validade de 90 dias
+    const expiresAt = new Date(
+      Date.now() + 90 * 24 * 60 * 60 * 1000,
+    ).toISOString();
 
     // Tenta gerar um código único — extremamente improvável colidir, mas garantimos.
     for (let attempt = 0; attempt < 5; attempt++) {

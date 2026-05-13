@@ -78,5 +78,6 @@ export interface FlowState {
     prize: Prize | null;
     coupon_code: string;
     expires_at: string;
+    isExisting?: boolean;
   } | null;
 }

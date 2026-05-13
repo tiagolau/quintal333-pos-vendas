@@ -12,6 +12,7 @@ const QUINTAL_WA_NUMBER = "5533991919770";
 
 export function ResultStep({ result, onRestart }: ResultStepProps) {
   const isWin = result.prize?.name !== "Quase!";
+  const isExisting = !!result.isExisting;
   const displayPrizeName = isWin
     ? result.prize?.name
     : "Cinco por cento pela noite";
@@ -33,7 +34,11 @@ export function ResultStep({ result, onRestart }: ResultStepProps) {
           className="font-serif-small italic text-q-cream-soft text-xs smallcaps"
           style={{ letterSpacing: "0.16em" }}
         >
-          {isWin ? "para a próxima visita" : "fique com a gente"}
+          {isExisting
+            ? "seu cupom ainda está ativo"
+            : isWin
+              ? "para a próxima visita"
+              : "fique com a gente"}
         </p>
         <h2
           className="font-serif text-q-cream-bright text-[2.4rem] leading-[0.95]"
@@ -42,8 +47,14 @@ export function ResultStep({ result, onRestart }: ResultStepProps) {
             letterSpacing: "-0.012em",
           }}
         >
-          {isWin ? "Parabéns." : "Da próxima."}
+          {isExisting ? "Que bom te ver." : isWin ? "Parabéns." : "Da próxima."}
         </h2>
+        {isExisting && (
+          <p className="text-q-cream-soft text-[0.92rem] leading-relaxed max-w-[34ch]">
+            Você já participou nos últimos 90 dias. Use o cupom abaixo na sua
+            próxima visita — depois você pode participar de novo.
+          </p>
+        )}
       </div>
 
       <div

@@ -69,9 +69,33 @@ export async function POST(request: Request) {
       );
     }
 
+    // Regra: 1 cupom por telefone a cada 90 dias. Se existir, devolvemos o
+    // existente em vez de deixar girar a roleta de novo. Avaliação continua
+    // sendo registrada normalmente.
+    const ninetyDaysAgo = new Date(
+      Date.now() - 90 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    const { data: existing } = await supabaseAdmin
+      .from("coupons")
+      .select(
+        "code, expires_at, prize:prizes(id, name, description, probability, is_active, created_at)",
+      )
+      .eq("customer_id", customerId)
+      .gte("created_at", ninetyDaysAgo)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
     return NextResponse.json({
       customer_id: customerId,
       review_id: review.id,
+      existing_coupon: existing
+        ? {
+            code: existing.code,
+            expires_at: existing.expires_at,
+            prize: existing.prize,
+          }
+        : null,
     });
   } catch (e) {
     console.error("submit:exception", e);

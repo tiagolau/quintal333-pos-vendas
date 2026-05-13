@@ -30,21 +30,75 @@ export async function GET(request: Request) {
   });
 }
 
+interface CouponPatchBody {
+  coupon_id?: string;
+  prize_id?: string;
+  expires_at?: string; // ISO string
+  redeemed?: boolean;
+}
+
 export async function PATCH(request: Request) {
-  const { coupon_id } = await request.json();
+  const body = (await request.json().catch(() => ({}))) as CouponPatchBody;
+  const { coupon_id, prize_id, expires_at, redeemed } = body;
 
   if (!coupon_id) {
-    return NextResponse.json({ error: "coupon_id obrigatório" }, { status: 400 });
+    return NextResponse.json(
+      { error: "coupon_id obrigatório" },
+      { status: 400 },
+    );
+  }
+
+  const patch: Record<string, unknown> = {};
+  if (typeof prize_id === "string" && prize_id) patch.prize_id = prize_id;
+  if (typeof expires_at === "string" && expires_at) {
+    const d = new Date(expires_at);
+    if (Number.isNaN(d.getTime())) {
+      return NextResponse.json(
+        { error: "expires_at inválido" },
+        { status: 400 },
+      );
+    }
+    patch.expires_at = d.toISOString();
+  }
+  if (typeof redeemed === "boolean") {
+    patch.redeemed = redeemed;
+    patch.redeemed_at = redeemed ? new Date().toISOString() : null;
+  }
+
+  if (Object.keys(patch).length === 0) {
+    return NextResponse.json({ success: true });
   }
 
   const { error } = await supabaseAdmin
     .from("coupons")
-    .update({ redeemed: true, redeemed_at: new Date().toISOString() })
+    .update(patch)
     .eq("id", coupon_id);
 
   if (error) {
     console.error("admin:coupons:patch", error);
-    return NextResponse.json({ error: "Erro ao resgatar cupom" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erro ao atualizar cupom" },
+      { status: 500 },
+    );
+  }
+
+  return NextResponse.json({ success: true });
+}
+
+export async function DELETE(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+  if (!id) {
+    return NextResponse.json({ error: "id obrigatório" }, { status: 400 });
+  }
+
+  const { error } = await supabaseAdmin.from("coupons").delete().eq("id", id);
+  if (error) {
+    console.error("admin:coupons:delete", error);
+    return NextResponse.json(
+      { error: "Erro ao excluir cupom" },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ success: true });

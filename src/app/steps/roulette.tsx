@@ -52,7 +52,7 @@ export function RouletteStep({
       onSpinComplete(
         prize,
         "QUINTAL5",
-        new Date(Date.now() + 30 * 86400000).toISOString(),
+        new Date(Date.now() + 90 * 86400000).toISOString(),
       );
     }
   };
