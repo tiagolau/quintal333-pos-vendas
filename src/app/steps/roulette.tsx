@@ -47,13 +47,24 @@ export function RouletteStep({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
+      // "Quase!" não gera cupom — backend retorna no_coupon=true
+      if (data.no_coupon) {
+        onSpinComplete(prize, "", "");
+        return;
+      }
+
       onSpinComplete(prize, data.coupon_code, data.expires_at);
     } catch {
-      onSpinComplete(
-        prize,
-        "QUINTAL5",
-        new Date(Date.now() + 90 * 86400000).toISOString(),
-      );
+      // Fallback offline: só se NÃO for "Quase!", oferece QUINTAL5 manual
+      if (prize.name === "Quase!") {
+        onSpinComplete(prize, "", "");
+      } else {
+        onSpinComplete(
+          prize,
+          "QUINTAL5",
+          new Date(Date.now() + 90 * 86400000).toISOString(),
+        );
+      }
     }
   };
 

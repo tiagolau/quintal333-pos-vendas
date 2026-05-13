@@ -11,19 +11,20 @@ interface ResultStepProps {
 const QUINTAL_WA_NUMBER = "5533991919770";
 
 export function ResultStep({ result, onRestart }: ResultStepProps) {
-  const isWin = result.prize?.name !== "Quase!";
+  const isQuase = result.prize?.name === "Quase!";
   const isExisting = !!result.isExisting;
-  const displayPrizeName = isWin
-    ? result.prize?.name
-    : "Cinco por cento pela noite";
-  const displayPrizeDescription = isWin
-    ? result.prize?.description
-    : "Use o código abaixo na próxima visita.";
+  // "Quase!" não gera cupom (a não ser que seja a tela `isExisting` mostrando
+  // um cupom ANTERIOR que continua válido).
+  const hasCoupon = !!result.coupon_code && (!isQuase || isExisting);
+
+  if (!hasCoupon) {
+    return <NoCouponResult onRestart={onRestart} />;
+  }
+
   const expiresDate = new Date(result.expires_at).toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "long",
   });
-
   const waMessage = `Oi! Acabei de avaliar no Quintal 333. Meu código do brinde: ${result.coupon_code}`;
   const waUrl = `https://wa.me/${QUINTAL_WA_NUMBER}?text=${encodeURIComponent(waMessage)}`;
 
@@ -34,11 +35,7 @@ export function ResultStep({ result, onRestart }: ResultStepProps) {
           className="font-serif-small italic text-q-cream-soft text-xs smallcaps"
           style={{ letterSpacing: "0.16em" }}
         >
-          {isExisting
-            ? "seu cupom ainda está ativo"
-            : isWin
-              ? "para a próxima visita"
-              : "fique com a gente"}
+          {isExisting ? "seu cupom ainda está ativo" : "para a próxima visita"}
         </p>
         <h2
           className="font-serif text-q-cream-bright text-[2.4rem] leading-[0.95]"
@@ -47,7 +44,7 @@ export function ResultStep({ result, onRestart }: ResultStepProps) {
             letterSpacing: "-0.012em",
           }}
         >
-          {isExisting ? "Que bom te ver." : isWin ? "Parabéns." : "Da próxima."}
+          {isExisting ? "Que bom te ver." : "Parabéns."}
         </h2>
         {isExisting && (
           <p className="text-q-cream-soft text-[0.92rem] leading-relaxed max-w-[34ch]">
@@ -70,11 +67,11 @@ export function ResultStep({ result, onRestart }: ResultStepProps) {
             letterSpacing: "-0.005em",
           }}
         >
-          {displayPrizeName}
+          {result.prize?.name}
         </p>
-        {displayPrizeDescription && (
+        {result.prize?.description && (
           <p className="text-q-cream-soft text-[0.92rem] leading-relaxed max-w-[28ch]">
-            {displayPrizeDescription}
+            {result.prize.description}
           </p>
         )}
       </div>
@@ -100,7 +97,8 @@ export function ResultStep({ result, onRestart }: ResultStepProps) {
           className="font-serif-small italic text-q-cream-soft text-[0.82rem]"
           style={{ fontVariationSettings: '"opsz" 12, "SOFT" 60' }}
         >
-          válido até <span className="not-italic nums-tabular">{expiresDate}</span>
+          válido até{" "}
+          <span className="not-italic nums-tabular">{expiresDate}</span>
         </p>
       </div>
 
@@ -162,6 +160,56 @@ export function ResultStep({ result, onRestart }: ResultStepProps) {
           type="button"
           onClick={onRestart}
           className="self-center text-q-stone/70 hover:text-q-cream-soft text-[0.78rem] font-serif italic transition-colors duration-300 py-2 px-3 mt-2"
+          style={{ fontVariationSettings: '"opsz" 12, "SOFT" 60' }}
+        >
+          outro avaliador?
+        </button>
+      </div>
+    </section>
+  );
+}
+
+// Tela quando o cliente cai em "Quase!": sem cupom, só agradecimento
+function NoCouponResult({ onRestart }: { onRestart: () => void }) {
+  return (
+    <section className="space-y-9">
+      <div className="space-y-3">
+        <p
+          className="font-serif-small italic text-q-cream-soft text-xs smallcaps"
+          style={{ letterSpacing: "0.16em" }}
+        >
+          obrigado por avaliar
+        </p>
+        <h2
+          className="font-serif text-q-cream-bright text-[2.4rem] leading-[0.95]"
+          style={{
+            fontVariationSettings: '"opsz" 144, "SOFT" 20, "wght" 400',
+            letterSpacing: "-0.012em",
+          }}
+        >
+          Quase.
+        </h2>
+      </div>
+
+      <div
+        className="h-px w-12 bg-q-gold-deep origin-left animate-reveal-line"
+        aria-hidden="true"
+      />
+
+      <p className="text-q-cream-soft text-[0.98rem] leading-relaxed max-w-[34ch]">
+        Não foi dessa vez — mas seu feedback chegou pra gente e isso vale
+        muito. Volte na próxima visita pra tentar de novo.
+      </p>
+
+      <p className="font-serif italic text-q-cream text-[0.95rem]">
+        Te esperamos.
+      </p>
+
+      <div className="pt-4">
+        <button
+          type="button"
+          onClick={onRestart}
+          className="self-center text-q-stone/70 hover:text-q-cream-soft text-[0.78rem] font-serif italic transition-colors duration-300 py-2 px-3"
           style={{ fontVariationSettings: '"opsz" 12, "SOFT" 60' }}
         >
           outro avaliador?

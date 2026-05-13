@@ -21,6 +21,18 @@ export async function POST(request: Request) {
       );
     }
 
+    // Prêmio "Quase!" não gera cupom — só retornamos o registro pra UI mostrar
+    // tela de agradecimento. Avaliação já foi gravada no /api/submit.
+    const { data: prize } = await supabaseAdmin
+      .from("prizes")
+      .select("name")
+      .eq("id", prize_id)
+      .maybeSingle();
+
+    if (prize?.name === "Quase!") {
+      return NextResponse.json({ no_coupon: true });
+    }
+
 
     // Idempotente: se já houve spin para esse review, devolve o cupom existente
     const { data: existingByReview } = await supabaseAdmin
