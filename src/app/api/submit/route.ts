@@ -48,6 +48,24 @@ export async function POST(request: Request) {
 
     const customerId = upserted.id;
 
+    // Regra: 1 participação na roleta por cliente a cada 90 dias —
+    // independente do resultado (ganhou prêmio ou caiu em "Quase!").
+    // Check ANTES de criar a review nova: existe alguma review desse
+    // cliente nos últimos 90 dias?
+    const ninetyDaysAgo = new Date(
+      Date.now() - 90 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    const { data: priorReview } = await supabaseAdmin
+      .from("reviews")
+      .select("id")
+      .eq("customer_id", customerId)
+      .gte("created_at", ninetyDaysAgo)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const cooldownActive = !!priorReview;
+
     const { data: review, error: reviewError } = await supabaseAdmin
       .from("reviews")
       .insert({
@@ -69,33 +87,38 @@ export async function POST(request: Request) {
       );
     }
 
-    // Regra: 1 cupom por telefone a cada 90 dias. Se existir, devolvemos o
-    // existente em vez de deixar girar a roleta de novo. Avaliação continua
-    // sendo registrada normalmente.
-    const ninetyDaysAgo = new Date(
-      Date.now() - 90 * 24 * 60 * 60 * 1000,
-    ).toISOString();
-    const { data: existing } = await supabaseAdmin
-      .from("coupons")
-      .select(
-        "code, expires_at, prize:prizes(id, name, description, probability, is_active, created_at)",
-      )
-      .eq("customer_id", customerId)
-      .gte("created_at", ninetyDaysAgo)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    // Se há cooldown ativo, busca o cupom mais recente (se houver). Pode não
+    // existir caso a última participação tenha caído em "Quase!".
+    let existingCoupon: {
+      code: string;
+      expires_at: string;
+      prize: unknown;
+    } | null = null;
+    if (cooldownActive) {
+      const { data: existing } = await supabaseAdmin
+        .from("coupons")
+        .select(
+          "code, expires_at, prize:prizes(id, name, description, probability, is_active, created_at)",
+        )
+        .eq("customer_id", customerId)
+        .gte("created_at", ninetyDaysAgo)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (existing) {
+        existingCoupon = {
+          code: existing.code,
+          expires_at: existing.expires_at,
+          prize: existing.prize,
+        };
+      }
+    }
 
     return NextResponse.json({
       customer_id: customerId,
       review_id: review.id,
-      existing_coupon: existing
-        ? {
-            code: existing.code,
-            expires_at: existing.expires_at,
-            prize: existing.prize,
-          }
-        : null,
+      cooldown_active: cooldownActive,
+      existing_coupon: existingCoupon,
     });
   } catch (e) {
     console.error("submit:exception", e);

@@ -11,14 +11,11 @@ interface ResultStepProps {
 const QUINTAL_WA_NUMBER = "5533991919770";
 
 export function ResultStep({ result, onRestart }: ResultStepProps) {
-  const isQuase = result.prize?.name === "Quase!";
   const isExisting = !!result.isExisting;
-  // "Quase!" não gera cupom (a não ser que seja a tela `isExisting` mostrando
-  // um cupom ANTERIOR que continua válido).
-  const hasCoupon = !!result.coupon_code && (!isQuase || isExisting);
+  const hasCoupon = !!result.coupon_code;
 
   if (!hasCoupon) {
-    return <NoCouponResult onRestart={onRestart} />;
+    return <NoCouponResult onRestart={onRestart} isExisting={isExisting} />;
   }
 
   const expiresDate = new Date(result.expires_at).toLocaleDateString("pt-BR", {
@@ -169,8 +166,17 @@ export function ResultStep({ result, onRestart }: ResultStepProps) {
   );
 }
 
-// Tela quando o cliente cai em "Quase!": sem cupom, só agradecimento
-function NoCouponResult({ onRestart }: { onRestart: () => void }) {
+// Tela sem cupom — usada em dois cenários:
+// 1. Cliente caiu em "Quase!" agora (isExisting=false)
+// 2. Cliente já participou nos últimos 90 dias e a participação anterior
+//    também foi "Quase!" (isExisting=true) — precisa esperar pra tentar de novo
+function NoCouponResult({
+  onRestart,
+  isExisting,
+}: {
+  onRestart: () => void;
+  isExisting: boolean;
+}) {
   return (
     <section className="space-y-9">
       <div className="space-y-3">
@@ -178,7 +184,7 @@ function NoCouponResult({ onRestart }: { onRestart: () => void }) {
           className="font-serif-small italic text-q-cream-soft text-xs smallcaps"
           style={{ letterSpacing: "0.16em" }}
         >
-          obrigado por avaliar
+          {isExisting ? "você já participou" : "obrigado por avaliar"}
         </p>
         <h2
           className="font-serif text-q-cream-bright text-[2.4rem] leading-[0.95]"
@@ -187,7 +193,7 @@ function NoCouponResult({ onRestart }: { onRestart: () => void }) {
             letterSpacing: "-0.012em",
           }}
         >
-          Quase.
+          {isExisting ? "Que bom te ver." : "Quase."}
         </h2>
       </div>
 
@@ -197,8 +203,9 @@ function NoCouponResult({ onRestart }: { onRestart: () => void }) {
       />
 
       <p className="text-q-cream-soft text-[0.98rem] leading-relaxed max-w-[34ch]">
-        Não foi dessa vez — mas seu feedback chegou pra gente e isso vale
-        muito. Volte na próxima visita pra tentar de novo.
+        {isExisting
+          ? "Sua avaliação anterior já entrou na nossa contagem. Daqui a 90 dias você pode girar a roleta de novo — mas o feedback de hoje é sempre bem-vindo."
+          : "Não foi dessa vez — mas seu feedback chegou pra gente e isso vale muito. Volte na próxima visita pra tentar de novo."}
       </p>
 
       <p className="font-serif italic text-q-cream text-[0.95rem]">

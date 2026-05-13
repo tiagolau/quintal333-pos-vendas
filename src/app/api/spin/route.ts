@@ -21,19 +21,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Prêmio "Quase!" não gera cupom — só retornamos o registro pra UI mostrar
-    // tela de agradecimento. Avaliação já foi gravada no /api/submit.
-    const { data: prize } = await supabaseAdmin
-      .from("prizes")
-      .select("name")
-      .eq("id", prize_id)
-      .maybeSingle();
-
-    if (prize?.name === "Quase!") {
-      return NextResponse.json({ no_coupon: true });
-    }
-
-
     // Idempotente: se já houve spin para esse review, devolve o cupom existente
     const { data: existingByReview } = await supabaseAdmin
       .from("coupons")
@@ -49,27 +36,53 @@ export async function POST(request: Request) {
       });
     }
 
-    // Regra: 1 cupom por cliente a cada 90 dias. Se houver outro cupom
-    // emitido pra esse customer_id em <90 dias, retorna ele em vez de
-    // gerar novo. Protege contra bypass do frontend.
+    // Regra: 1 participação a cada 90 dias. Defesa em profundidade
+    // (frontend já bloqueia). Conta REVIEWS anteriores ao review_id
+    // atual — se houver, esse spin é desautorizado.
     const ninetyDaysAgo = new Date(
       Date.now() - 90 * 24 * 60 * 60 * 1000,
     ).toISOString();
-    const { data: recentCoupon } = await supabaseAdmin
-      .from("coupons")
-      .select("code, expires_at")
+    const { data: priorReview } = await supabaseAdmin
+      .from("reviews")
+      .select("id")
       .eq("customer_id", customer_id)
+      .neq("id", review_id)
       .gte("created_at", ninetyDaysAgo)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
-    if (recentCoupon) {
-      return NextResponse.json({
-        coupon_code: recentCoupon.code,
-        expires_at: recentCoupon.expires_at,
-        already_spun: true,
-      });
+    if (priorReview) {
+      // Se há cupom anterior, devolve ele; senão, no_coupon (cooldown sem cupom).
+      const { data: recentCoupon } = await supabaseAdmin
+        .from("coupons")
+        .select("code, expires_at")
+        .eq("customer_id", customer_id)
+        .gte("created_at", ninetyDaysAgo)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (recentCoupon) {
+        return NextResponse.json({
+          coupon_code: recentCoupon.code,
+          expires_at: recentCoupon.expires_at,
+          already_spun: true,
+        });
+      }
+      return NextResponse.json({ no_coupon: true, cooldown: true });
+    }
+
+    // Prêmio "Quase!" não gera cupom — só retornamos pra UI mostrar tela de
+    // agradecimento. Avaliação já foi gravada no /api/submit.
+    const { data: prize } = await supabaseAdmin
+      .from("prizes")
+      .select("name")
+      .eq("id", prize_id)
+      .maybeSingle();
+
+    if (prize?.name === "Quase!") {
+      return NextResponse.json({ no_coupon: true });
     }
 
     // Validade de 90 dias

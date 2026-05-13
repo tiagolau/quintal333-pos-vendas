@@ -7,6 +7,7 @@ import type { FlowState, Prize } from "@/lib/types";
 export interface SubmitResult {
   customerId: string;
   reviewId: string;
+  cooldownActive: boolean;
   existingCoupon: {
     code: string;
     expires_at: string;
@@ -54,6 +55,7 @@ export function RegisterStep({
       onComplete({
         customerId: data.customer_id,
         reviewId: data.review_id,
+        cooldownActive: !!data.cooldown_active,
         existingCoupon: data.existing_coupon ?? null,
       });
     } catch (err) {

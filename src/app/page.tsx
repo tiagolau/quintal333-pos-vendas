@@ -36,18 +36,27 @@ export default function Home() {
   const handleRegisterComplete = (data: SubmitResult) => {
     setCustomerId(data.customerId);
     setReviewId(data.reviewId);
-    if (data.existingCoupon) {
-      // Cliente ja participou nos ultimos 90 dias — mostra o cupom ativo dele
-      // em vez de deixar girar a roleta de novo. Avaliacao foi salva normal.
+    if (data.cooldownActive) {
+      // Cliente já participou nos últimos 90 dias (regra é 1 spin por 90 dias,
+      // independente do resultado). Avaliação foi salva. Pula a roleta:
+      //  - com cupom anterior: mostra o cupom (tela "Que bom te ver")
+      //  - sem cupom anterior (caiu em Quase! antes): tela de agradecimento
       setState((s) => ({
         ...s,
         step: "result",
-        result: {
-          prize: data.existingCoupon!.prize,
-          coupon_code: data.existingCoupon!.code,
-          expires_at: data.existingCoupon!.expires_at,
-          isExisting: true,
-        },
+        result: data.existingCoupon
+          ? {
+              prize: data.existingCoupon.prize,
+              coupon_code: data.existingCoupon.code,
+              expires_at: data.existingCoupon.expires_at,
+              isExisting: true,
+            }
+          : {
+              prize: null,
+              coupon_code: "",
+              expires_at: "",
+              isExisting: true,
+            },
       }));
     } else {
       setState((s) => ({ ...s, step: "roulette" }));
