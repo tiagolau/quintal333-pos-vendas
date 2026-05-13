@@ -120,7 +120,7 @@ export function ResultStep({ result, onRestart }: ResultStepProps) {
                 letterSpacing: "0.14em",
               }}
             >
-              Enviar para o Quintal
+              Validar Cupom de desconto
             </span>
           </span>
           <span
@@ -140,10 +140,11 @@ export function ResultStep({ result, onRestart }: ResultStepProps) {
         </a>
 
         <p
-          className="text-center text-q-cream-soft text-[0.78rem] font-serif italic leading-snug max-w-[32ch] mx-auto"
+          className="text-center text-q-cream-soft text-[0.78rem] font-serif italic leading-snug max-w-[34ch] mx-auto"
           style={{ fontVariationSettings: '"opsz" 12, "SOFT" 60' }}
         >
-          Salve o contato — é por aí que a gente fala com você.
+          Envie do mesmo WhatsApp que você cadastrou — é assim que a gente
+          valida o cupom.
         </p>
 
         <button
